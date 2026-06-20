@@ -1,0 +1,21 @@
+function [] = plotDifRadial(orbitNominal, varargin)
+numOrbits = length(varargin);
+% El truco: interpolamos el radio con J2 para que use los mismos tiempos 't' que la ideal
+figure('Color', 'w');
+plot(orbitNominal.t/3600, zeros(size(orbitNominal.t)), 'k--', 'LineWidth', 1.2, 'DisplayName', 'Referencia Ideal (Kepler)');
+hold on;
+for i = 1:numOrbits
+    orbitP= varargin{i}; 
+    
+    r_norm_j2_interp = interp1(orbitP.t, orbitP.radiusNorm, orbitNominal.t, 'linear', 'extrap');
+    
+    hold on;
+    Ahora sí miden exactamente lo mismo y se pueden restar
+    diferencia_radial = orbitNominal.radiusNorm - r_norm_j2_interp;
+    plot(orbitNominal.t/3600, diferencia_radial, 'r', 'LineWidth', 1.5, 'DisplayName', 'Perturbación J_2 (Error)');
+end
+
+
+% Ajustamos los límites del gráfico dinámicamente
+ylim([min(diferencia_radial)*1.2, max(diferencia_radial)*1.2]);
+end

@@ -1,21 +1,42 @@
-function [] = plotDifRadial(r_sat_ideal, r_sat_j2, tJ2, t)
-r_norm_ideal_vec = vecnorm(r_sat_ideal, 2, 2);
-r_norm_j2_vec = vecnorm(r_sat_j2, 2, 2);
-
-% El truco: interpolamos el radio con J2 para que use los mismos tiempos 't' que la ideal
-r_norm_j2_interp = interp1(tJ2, r_norm_j2_vec, t, 'linear', 'extrap');
-
-% Ahora sí miden exactamente lo mismo y se pueden restar
-diferencia_radial = r_norm_ideal_vec - r_norm_j2_interp;
-
-figure('Color', 'w');
-plot(t/3600, diferencia_radial, 'r', 'LineWidth', 1.5, 'DisplayName', 'Perturbación J_2 (Error)');
-hold on;
-plot(t/3600, zeros(size(t)), 'k--', 'LineWidth', 1.2, 'DisplayName', 'Referencia Ideal (Kepler)');
-title('Diferencia Radial: Desviación respecto al Modelo Teórico');
-xlabel('Tiempo (horas)'); ylabel('\Delta Radio (km)');
-legend('Location', 'best'); grid on;
-
-% Ajustamos los límites del gráfico dinámicamente
-ylim([min(diferencia_radial)*1.2, max(diferencia_radial)*1.2]);
+function [] = plotDifRadial(orbitNominal, varargin)
+    numOrbits = length(varargin);
+    colors = {'#D95319', '#EDB120', '#7E2F8E', '#77AC30', '#4DBEEE', '#A2142F'};
+    
+    figure('Color', 'w');
+    
+    for i = 1:numOrbits
+        % Crear un subgráfico vertical para cada órbita perturbadora
+        subplot(numOrbits, 1, i);
+        
+        orbitP = varargin{i}; 
+        r_norm_j2_interp = interp1(orbitP.t, orbitP.radiusNorm, orbitNominal.t, 'linear', 'extrap');
+        
+        diferencia_radial = orbitNominal.radiusNorm - r_norm_j2_interp;
+        
+        % Línea de referencia en cero
+        plot(orbitNominal.t/3600, zeros(size(orbitNominal.t)), 'k--', 'LineWidth', 1.2, 'DisplayName', 'Reference (Kepler)');
+        hold on;
+        
+        color_idx = mod(i-1, length(colors)) + 1;
+        label_name = sprintf('Perturbed Orbit %d', i);
+        
+        % Gráfica de la diferencia
+        plot(orbitNominal.t/3600, diferencia_radial, '-', 'Color', colors{color_idx}, 'LineWidth', 1.5, 'DisplayName', label_name);
+        
+        % Ajuste independiente del eje Y para cada subgráfico
+        localMin = min(diferencia_radial);
+        localMax = max(diferencia_radial);
+        yRange = localMax - localMin;
+        if yRange == 0
+            ylim([-1, 1]);
+        else
+            ylim([localMin - 0.1*yRange, localMax + 0.1*yRange]);
+        end
+        
+        grid on;
+        legend('Location', 'best');
+        xlabel('Time (hours)');
+        ylabel('\Delta Radio (km)');
+        title(['Radial Distance Error Analysis - Orbit ', num2str(i)]);
+    end
 end
