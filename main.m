@@ -1,7 +1,7 @@
 %% 1. Configuración de constantes y condiciones iniciales
 Gr = 6.6743e-11;      
 m1 = 5.972e24;        
-m2 = 1000;            
+m2 = 10;            
 radio_orbita = 6800e3; 
 Re = 6378137;         
 %% 2. Perturbaciones
@@ -15,7 +15,7 @@ V10 = [0; 0; 0];
 V20 = [0; v_orbital * cos(deg2rad(45)); v_orbital * sin(deg2rad(45))]; 
 
 % Aumentamos el tiempo a 24 horas (varias órbitas) para ver la precesión de la órbita
-tf = 24 * 3600; 
+tf = 3*24 * 3600; 
 
 %% 2. Integración Numérica
 
@@ -61,7 +61,9 @@ hold on;
 plot(tJ2/3600, inc_j2, 'r--', 'LineWidth', 1.2, 'DisplayName', 'Con J2');
 title('Evolución de la Inclinación');
 ylabel('i (grados)'); xlabel('Tiempo (horas)'); legend; grid on;
-
+% Calcular la norma (magnitud) de los vectores de posición en km
+r_norm_ideal_vec = sqrt(sum(r_sat_ideal.^2, 2));
+r_norm_j2_vec = sqrt(sum(r_sat_j2.^2, 2));
 subplot(2,1,2);
 plot(t/3600, r_norm_ideal_vec, 'b', 'LineWidth', 1.5, 'DisplayName', 'Ideal');
 hold on;
