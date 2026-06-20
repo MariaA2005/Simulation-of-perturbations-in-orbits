@@ -1,0 +1,16 @@
+function sensorData = simulateSatSensors(gps, imu, orbitData)
+    N = orbitData.n;
+   
+   
+    sensorData.gpsPos = orbitData.radius + gps.sigmaPos * randn(N, 3);
+    sensorData.gpsVel = orbitData.vel + gps.sigmaVel * randn(N, 3);
+    
+  
+    accel_random_walk = cumsum( * randn(N, 3));
+    sensorData.imuAccel = orbitData.acc + sigma_accel * randn(N, 3) + accel_random_walk;
+    
+   
+    gyro_random_walk = cumsum(bias_gyro_drift * randn(N, 3));
+    gyro_base = repmat(omega_nominal, N, 1);
+    sensorData.imuGyro = gyro_base + sigma_gyro * randn(N, 3) + gyro_random_walk;
+end

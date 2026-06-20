@@ -1,100 +1,49 @@
-%% 1. Configuración de constantes y condiciones iniciales
-Gr = 6.6743e-11;      
-m1 = 5.972e24;        
-m2 = 1000;            
-radio_orbita = 6800e3; 
-Re = 6378137;         
-%% 2. Perturbaciones
-J2 =  1.08263e-3;      
-%% 3.Cond. iniciales
+% -------------------------------------------------------------------------
+%% IMPORTS
+% -------------------------------------------------------------------------
+
+% -------------------------------------------------------------------------
+%% DEFINITIONS
+% -------------------------------------------------------------------------
+ 
+%% Initial conditions
 v_orbital = sqrt(Gr * m1 / radio_orbita); 
 
-R10 = [0; 0; 0];                    
-R20 = [radio_orbita; 0; 0];         
-V10 = [0; 0; 0];                    
-V20 = [0; v_orbital * cos(deg2rad(45)); v_orbital * sin(deg2rad(45))]; 
+state0.R10 = [0; 0; 0];                    
+state0.R20 = [radio_orbita; 0; 0];         
+state0.V10 = [0; 0; 0];                    
+state0.V20 = [0; v_orbital * cos(deg2rad(constant.inc0)); v_orbital * sin(deg2rad(constant.inc0))]; 
+tf = 2*24 * 3600; 
 
-% Aumentamos el tiempo a 24 horas (varias órbitas) para ver la precesión de la órbita
-tf = 24 * 3600; 
-
-%% 2. Integración Numérica
-
-[t, states_m] = two_body_integration(Gr, m1, m2, R10, V10, R20, V20, tf, Re, 0); 
-[tJ2, statesJ2_m] = two_body_integration(Gr, m1, m2, R10, V10, R20, V20, tf, Re, J2);
-
-%% 3. Extracción del Satélite y conversión a Kilómetros
-% Si tu función devuelve 12 columnas, el satélite está en las columnas 7:12.
-% Si calculamos la posición RELATIVA (Satélite - Tierra), nos aseguramos de centrar todo en la Tierra.
-
-r_sat_ideal = (states_m(:, 7:9) - states_m(:, 1:3)) / 1000;
-v_sat_ideal = (states_m(:, 10:12) - states_m(:, 4:6)) / 1000;
-
-r_sat_j2 = (statesJ2_m(:, 7:9) - statesJ2_m(:, 1:3)) / 1000;
-v_sat_j2 = (statesJ2_m(:, 10:12) - statesJ2_m(:, 4:6)) / 1000;
+% -------------------------------------------------------------------------
+%% OBTAIN DATA
+% -------------------------------------------------------------------------
+%% Orbits
+[t, states_m, acc] = two_body_integration(constant, state0, tf); 
+[tJ2, statesJ2_m, accJ2] = two_body_integration(constant, state0, tf, J2);
+[tLS, statesLS_m, accLS] = two_body_integration(constant, state0, tf, 0, true);
+orbitNominal = getOrbitData(states_m, t, acc); 
+orbitJ2 = getOrbitData(statesJ2_m, tJ2, accJ2);
+orbitLS = getOrbitData(statesLS_m, tLS, accLS); 
+%% Sensors
+% -------------------------------------------------------------------------
+simula
+%% KALMAN FILTER
+% -------------------------------------------------------------------------
+% -------------------------------------------------------------------------
+%% PID
+% -------------------------------------------------------------------------
+% -------------------------------------------------------------------------
+%% CORRECT ORBITS
+% -------------------------------------------------------------------------
+% -------------------------------------------------------------------------
+%% GRAFICAS
+% -------------------------------------------------------------------------
 
 %% 4. Visualización y Comparación 3D
-figure('Color', 'w');
-hold on;
-plot3(r_sat_ideal(:,1), r_sat_ideal(:,2), r_sat_ideal(:,3), 'b', 'LineWidth', 1.5, 'DisplayName', 'Ideal (Kepler)');
-plot3(r_sat_j2(:,1), r_sat_j2(:,2), r_sat_j2(:,3), 'r--', 'LineWidth', 1.2, 'DisplayName', 'Perturbada (J2)');
-
-% Graficar la Tierra a escala (en km)
-[unitX, unitY, unitZ] = sphere(20);
-surf(unitX*6378, unitY*6378, unitZ*6378, 'EdgeColor', 'none', 'FaceAlpha', 0.1);
-
-axis equal; grid on; legend('Location', 'best');
-title('Comparación de Órbitas: Ideal vs Perturbación J_2 (24h)');
-xlabel('X (km)'); ylabel('Y (km)'); zlabel('Z (km)');
-view(3); % Forzar vista 3D
+plot3D(orbitNominal.radius, orbitJ2.radius, orbitLS.radius); 
 
 %% 5. Diferencia Radial (Corregido con Interpolación)
-r_norm_ideal_vec = vecnorm(r_sat_ideal, 2, 2);
-r_norm_j2_vec = vecnorm(r_sat_j2, 2, 2);
-
-% El truco: interpolamos el radio con J2 para que use los mismos tiempos 't' que la ideal
-r_norm_j2_interp = interp1(tJ2, r_norm_j2_vec, t, 'linear', 'extrap');
-
-% Ahora sí miden exactamente lo mismo y se pueden restar
-diferencia_radial = r_norm_ideal_vec - r_norm_j2_interp;
-
-figure('Color', 'w');
-plot(t/3600, diferencia_radial, 'r', 'LineWidth', 1.5, 'DisplayName', 'Perturbación J_2 (Error)');
-hold on;
-plot(t/3600, zeros(size(t)), 'k--', 'LineWidth', 1.2, 'DisplayName', 'Referencia Ideal (Kepler)');
-title('Diferencia Radial: Desviación respecto al Modelo Teórico');
-xlabel('Tiempo (horas)'); ylabel('\Delta Radio (km)');
-legend('Location', 'best'); grid on;
-
-% Ajustamos los límites del gráfico dinámicamente
-ylim([min(diferencia_radial)*1.2, max(diferencia_radial)*1.2]);
-
-%% 6. Análisis de Inclinación y Radio
-n_ideal = length(t);
-n_j2 = length(tJ2);
-inc_ideal = zeros(n_ideal, 1);
-inc_j2 = zeros(n_j2, 1);
-
-for i = 1:n_ideal
-    h_vec = cross(r_sat_ideal(i,:), v_sat_ideal(i,:));
-    inc_ideal(i) = rad2deg(acos(h_vec(3) / norm(h_vec)));
-end
-
-for i = 1:n_j2
-    h_vec = cross(r_sat_j2(i,:), v_sat_j2(i,:));
-    inc_j2(i) = rad2deg(acos(h_vec(3) / norm(h_vec)));
-end
-
-figure('Name', 'Análisis de Perturbaciones', 'Color', 'w');
-subplot(2,1,1);
-plot(t/3600, inc_ideal, 'b', 'LineWidth', 1.5, 'DisplayName', 'Ideal');
-hold on;
-plot(tJ2/3600, inc_j2, 'r--', 'LineWidth', 1.2, 'DisplayName', 'Con J2');
-title('Evolución de la Inclinación');
-ylabel('i (grados)'); xlabel('Tiempo (horas)'); legend; grid on;
-
-subplot(2,1,2);
-plot(t/3600, r_norm_ideal_vec, 'b', 'LineWidth', 1.5, 'DisplayName', 'Ideal');
-hold on;
-plot(tJ2/3600, r_norm_j2_vec, 'r--', 'LineWidth', 1.2, 'DisplayName', 'Con J2');
-title('Evolución del Radio Orbital');
-ylabel('|r| (km)'); xlabel('Tiempo (horas)'); legend; grid on;
+plotDifRadial(orbitNominal, orbitJ2, orbitLS); 
+%% radius and inc
+plotIncRadius(orbitNominal,orbitJ2, orbitLS);
