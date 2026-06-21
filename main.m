@@ -1,16 +1,17 @@
 % -------------------------------------------------------------------------
 %% IMPORTS
 % -------------------------------------------------------------------------
-
+run("constants.m"); 
+run("sensorParameters.m"); 
 % -------------------------------------------------------------------------
 %% DEFINITIONS
 % -------------------------------------------------------------------------
  
 %% Initial conditions
-v_orbital = sqrt(Gr * m1 / radio_orbita); 
+v_orbital = sqrt(constant.Gr * constant.m1 / constant.radio_orbita); 
 
 state0.R10 = [0; 0; 0];                    
-state0.R20 = [radio_orbita; 0; 0];         
+state0.R20 = [constant. radio_orbita; 0; 0];         
 state0.V10 = [0; 0; 0];                    
 state0.V20 = [0; v_orbital * cos(deg2rad(constant.inc0)); v_orbital * sin(deg2rad(constant.inc0))]; 
 tf = 2*24 * 3600; 
