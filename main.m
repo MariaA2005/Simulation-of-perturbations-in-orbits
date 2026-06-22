@@ -44,6 +44,6 @@ orbitGPS = getOrbitDataKF(sensorData.gpsPos, sensorData.gpsVel, orbitNominal.t, 
 % -------------------------------------------------------------------------
 plotSensorVsReal(orbitNominal, sensorData);
 plotSensorError(orbitNominal, sensorData);
-plot3D(orbitNominal.radius, orbitJ2.radius, orbitLS.radius, orbitEFK.radius, orbitGPS.radius); 
-plotDifRadial(orbitNominal, orbitJ2, orbitLS, orbitEFK, orbitGPS); 
-plotIncRadius(orbitNominal, orbitJ2, orbitLS, orbitEFK, orbitGPS);
+plot3D(orbitNominal, orbitEFK, orbitGPS); 
+plotDifRadial(orbitNominal, orbitEFK, orbitGPS); 
+plotIncRadius(orbitNominal, orbitEFK, orbitGPS);

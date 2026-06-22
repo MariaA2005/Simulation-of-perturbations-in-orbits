@@ -31,43 +31,19 @@ sensorData.imuAccel = movmean(sensorData.imuAccel, 5, 1);
 % -------------------------------------------------------------------------
 %% KALMAN FILTER (EKF) MULTI-RATE (Unidades: km y km/s)
 % -------------------------------------------------------------------------
-[R_gps, Q_base, P, H, ekf_pos,ekf_vel, acc_func]=initialiseEKF(t, state0, sensorData, gps.sigmaPos); 
+[R_gps, Q_base, P, H, ekf_pos,ekf_vel, acc_func, x_est]=initialiseEKF(t, state0, sensorData, gps.sigmaPos); 
 
 % Bucle Principal del EKF
-[ekf_pos, ekf_vel] = runEKF(num_steps, t, acc_func, P, Q_base, efk_pos, ekf_vel, x_); 
+[ekf_pos, ekf_vel] = runEKF(num_steps, t, acc_func, P, Q_base, H, R_gps, x_est, sensorData, ekf_pos,ekf_vel); 
 
 orbitEFK = getOrbitDataKF((ekf_pos'), (ekf_vel'), orbitNominal.t, sensorData.imuAccel); 
 orbitGPS = getOrbitDataKF(sensorData.gpsPos, sensorData.gpsVel, orbitNominal.t, sensorData.imuAccel); 
-
-% -------------------------------------------------------------------------
-%% RECORTE DE TRANSITORIO INICIAL
-% -------------------------------------------------------------------------
-puntos_a_saltar = 150; 
-orbitas_lista = {orbitNominal, orbitJ2, orbitLS, orbitEFK, orbitGPS, sensorData};
-for i = 1:length(orbitas_lista)
-    campos = fieldnames(orbitas_lista{i});
-    for j = 1:length(campos)
-        data_temporal = orbitas_lista{i}.(campos{j});
-        if size(data_temporal, 1) == num_steps
-            orbitas_lista{i}.(campos{j}) = data_temporal(puntos_a_saltar:end, :);
-        elseif size(data_temporal, 2) == num_steps 
-            orbitas_lista{i}.(campos{j}) = data_temporal(:, puntos_a_saltar:end);
-        end
-    end
-end
-
-orbitNominal = orbitas_lista{1};
-orbitJ2      = orbitas_lista{2};
-orbitLS      = orbitas_lista{3};
-orbitEFK     = orbitas_lista{4};
-orbitGPS     = orbitas_lista{5};
-sensorData   = orbitas_lista{6};
 
 % -------------------------------------------------------------------------
 %% GRAFICAS
 % -------------------------------------------------------------------------
 plotSensorVsReal(orbitNominal, sensorData);
 plotSensorError(orbitNominal, sensorData);
-plot3D(orbitNominal.radius, orbitJ2.radius, orbitLS.radius, orbitEFK.radius, orbitGPS.radius); 
-plotDifRadial(orbitNominal, orbitJ2, orbitLS, orbitEFK, orbitGPS); 
+plot3D(orbitNominal.radius, orbitEFK.radius, orbitGPS.radius); 
+plotDifRadial(orbitNominal, orbitEFK, orbitGPS); 
 plotIncRadius(orbitNominal, orbitJ2, orbitLS, orbitEFK, orbitGPS);

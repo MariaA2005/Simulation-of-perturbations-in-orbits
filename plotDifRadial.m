@@ -18,7 +18,18 @@ function [] = plotDifRadial(orbitNominal, varargin)
         hold on;
         
         color_idx = mod(i-1, length(colors)) + 1;
-        label_name = sprintf('Perturbed Orbit %d', i);
+        
+        % --- OBTENER EL NOMBRE DE LA VARIABLE ---
+        % inputname(1) es 'orbitNominal'. Los de varargin empiezan en el índice 2.
+        nombreVariable = inputname(i + 1); 
+        
+        % Si pasan un argumento directo sin nombre (ej: un struct inline), evitamos que quede vacío
+        if isempty(nombreVariable)
+            nombreVariable = sprintf('Orbit %d', i);
+        end
+        
+        label_name = sprintf('Perturbed: %s', nombreVariable);
+        % ----------------------------------------
         
         % Gráfica de la diferencia
         plot(orbitNominal.t/3600, diferencia_radial, '-', 'Color', colors{color_idx}, 'LineWidth', 1.5, 'DisplayName', label_name);
@@ -37,6 +48,6 @@ function [] = plotDifRadial(orbitNominal, varargin)
         legend('Location', 'best');
         xlabel('Time (hours)');
         ylabel('\Delta Radio (km)');
-        title(['Radial Distance Error Analysis - Orbit ', num2str(i)]);
+        title(['Radial Distance Error Analysis - ', nombreVariable]);
     end
 end
