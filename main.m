@@ -40,30 +40,6 @@ orbitEFK = getOrbitDataKF((ekf_pos'), (ekf_vel'), orbitNominal.t, sensorData.imu
 orbitGPS = getOrbitDataKF(sensorData.gpsPos, sensorData.gpsVel, orbitNominal.t, sensorData.imuAccel); 
 
 % -------------------------------------------------------------------------
-%% RECORTE DE TRANSITORIO INICIAL
-% -------------------------------------------------------------------------
-puntos_a_saltar = 150; 
-orbitas_lista = {orbitNominal, orbitJ2, orbitLS, orbitEFK, orbitGPS, sensorData};
-for i = 1:length(orbitas_lista)
-    campos = fieldnames(orbitas_lista{i});
-    for j = 1:length(campos)
-        data_temporal = orbitas_lista{i}.(campos{j});
-        if size(data_temporal, 1) == num_steps
-            orbitas_lista{i}.(campos{j}) = data_temporal(puntos_a_saltar:end, :);
-        elseif size(data_temporal, 2) == num_steps 
-            orbitas_lista{i}.(campos{j}) = data_temporal(:, puntos_a_saltar:end);
-        end
-    end
-end
-
-orbitNominal = orbitas_lista{1};
-orbitJ2      = orbitas_lista{2};
-orbitLS      = orbitas_lista{3};
-orbitEFK     = orbitas_lista{4};
-orbitGPS     = orbitas_lista{5};
-sensorData   = orbitas_lista{6};
-
-% -------------------------------------------------------------------------
 %% GRAFICAS
 % -------------------------------------------------------------------------
 plotSensorVsReal(orbitNominal, sensorData);
